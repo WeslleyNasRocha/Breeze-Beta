@@ -2,4 +2,7 @@ build/*
 Breeze.elf
 Breeze.nacp
 Breeze.nro
+__pycache__/
+*.pyc
+.DS_Store
 

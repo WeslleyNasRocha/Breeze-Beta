@@ -314,6 +314,88 @@ class. The last field is the target.
 - `field_users` matches the plain `[reg, #offset]` form and does not know which
   object the register holds, so it is only meaningful inside the methods named.
 
+### `breeze_mcp.py` (Model Context Protocol server for AI assistants)
+
+Exposes Breeze PC Connect as a standard [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server so AI assistants (**Claude Desktop**, **Cursor**, **Antigravity**, **Cline**) can inspect live game memory and build Atmosphere cheats autonomously:
+
+- **Automatic Chunking**: Transparently splits reads > 4096 bytes into 4 KB chunks without failing on protocol limits.
+- **Typed Memory & Object Inspection**: Read/write/freeze typed values (`double`, `float`, `u32`, `u64`, `hex`) and inspect live struct fields, class instances (Unity IL2CPP, Unreal, C++), and tagged containers.
+- **Function Search & Disassembly**: Search function maps (`il2cpp`, `ue`, `gm`) and disassemble live ARM64 code via Capstone, automatically resolving `BL` targets to symbols and `ADRP` pages to static BSS/data addresses.
+- **Callers Discovery (`xref call`)**: Map cross-references to any function or code address across the binary, identifying all caller sites and containing functions.
+- **Cheat Synthesis & Dual Deployment**: Assemble `04000000` opcodes via universal presets (`ret`, `ret_true`, `ret_false`, `ret_zero`, `ret_one`, `nop`, `ret_struct_zero`) or Keystone assembler, generate Type 5/7/6 pointer chains, and deploy simultaneously to live `dmnt`, Breeze SD, and Atmosphere contents (`sdmc:/atmosphere/contents/<TID>/cheats/<BID>.txt`).
+
+#### Quick Installation (CLI Installer)
+
+You can automatically configure your AI assistant clients with a single command:
+
+```bash
+# Auto-detects installed clients (Claude, Cursor, Antigravity, Cline) and configures them
+python3 install_mcp.py --host 192.168.1.65 --code 0303
+```
+
+**Options:**
+- `--host <IP>`: Nintendo Switch IP address (defaults to `~/.breeze_pc.json`, `BREEZE_HOST`, or `192.168.1.65`).
+- `--code <AUTH>`: Breeze PC Connect code (defaults to `~/.breeze_pc.json`, `BREEZE_CODE`, or `0303`).
+- `--client {all,claude,cursor,antigravity,cline}`: Target specific AI client (default: `all`).
+- `--status`: Check current installation and configuration status across all clients.
+- `--uninstall`: Remove Breeze MCP configuration from client files.
+
+Example checking status:
+```bash
+python3 install_mcp.py --status
+```
+
+#### Manual Setup
+
+If you prefer to configure manually or run with `uv`:
+
+```bash
+# Using uv (dependencies resolved automatically via PEP 723):
+uv run breeze_mcp.py
+
+# Or using pip:
+pip install -r requirements-mcp.txt
+python3 breeze_mcp.py
+```
+
+Add to your client's MCP configuration (`claude_desktop_config.json`, `mcp.json`, or `mcp_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "breeze": {
+      "command": "uv",
+      "args": ["run", "/path/to/Breeze-Beta/breeze_mcp.py"],
+      "env": {
+        "BREEZE_HOST": "192.168.1.65",
+        "BREEZE_CODE": "0303"
+      }
+    }
+  }
+}
+```
+
+#### Available MCP Tools
+
+| Tool | Parameters | Description |
+|---|---|---|
+| `breeze_connect` | `host`, `code`, `port` | Connect or reconnect to Breeze PC Connect. |
+| `breeze_game_info` | *(none)* | Live game metadata: Title ID, Build ID, engine, memory boundaries (`main`, `heap`, `alias`). |
+| `breeze_search_functions` | `query`, `max_results` | Search cached function maps (`il2cpp`, `ue`, `gm`) by substring or regex. |
+| `breeze_find_callers` | `target`, `max_results` | Find all functions and branch sites calling `target` via native `xref call`. |
+| `breeze_disassemble` | `offset_or_symbol`, `instruction_count` | Disassemble ARM64 memory with Capstone; resolves `BL` symbols and `ADRP` pages. |
+| `breeze_read_typed` | `address`, `dtype`, `count`, `format` | Read memory as `double`, `float`, `u32`, `u64`, or `hex` with 4 KB auto-chunking. |
+| `breeze_write_typed` | `address`, `dtype`, `values`, `hold` | Write values (`poke`) and optionally freeze memory (`hold`). |
+| `breeze_inspect_object` | `address`, `start_offset`, `end_offset` | Scan 8-byte aligned fields, resolve pointers to main/heap, and dereference types (Unity, Unreal, C++, GameMaker). (Also available as `breeze_inspect_container`). |
+| `breeze_find_refs` | `address`, `range_hex`, `max_hits`, `seconds`, `filter_region` | Pointer scan for all writable memory pointing to `address`. Filter by `main` for static BSS anchors. |
+| `breeze_walk_chain` | `base`, `offsets` | Traverse CheatVM Type 5/7/6 pointer chains and read live values. |
+| `breeze_make_pointer_cheat` | `name`, `main_base_offset`, `offsets`, `value`, `dtype` | Generate Atmosphere CheatVM pointer cheats (`580F0000` / `780F0000`). |
+| `breeze_make_asm_cheat` | `name`, `main_offset`, `patch` | Generate `04000000` code patches via presets (`ret`, `ret_true`, `ret_false`, `ret_zero`, `ret_one`, `nop`, `ret_struct_zero`) or Keystone assembler. |
+| `breeze_deploy_cheats` | `cheats_block`, `activate`, `save_to_sd` | Add cheats to live `dmnt` and mirror to both Breeze and Atmosphere SD card paths. |
+| `breeze_update_notes` | `notes_markdown`, `append` | Read or append research notes to `sdmc:/switch/breeze/notes/<TID>_notes.md`. |
+| `breeze_raw_cmd` | `command` | Execute arbitrary raw Breeze PC Connect commands. |
+
+
 ### gen2 and Field watch
 
 The gen2 fork's watches, without Breeze's screens. These run on the UI thread

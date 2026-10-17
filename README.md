@@ -28,8 +28,34 @@ This project started as a rewrite of the features implemented in EdiZon SE. Over
 -   **Rebase**: Carry cheats to a new version of the same game.
 -   **Overlay Mode**: Show Breeze on top of the running game and switch with the HOME button.
 -   **PC Connect and PC App**: See and drive Breeze from a PC, take save snapshots, and copy files, while the game runs.
+-   **MCP Server (Model Context Protocol)**: Connect AI coding assistants (Claude Desktop, Cursor, Antigravity) to Breeze over PC Connect for agentic memory inspection, disassembly, and Atmosphere cheat generation.
 -   **Auto-Update**: Keep the app and database up to date automatically.
 -   **Consistent UI**: A user-friendly interface designed for seamless navigation. Includes **Radial Selection** (hold ZL and use stick) for quick action activation.
+
+---
+
+### AI Assistant Integration (MCP Server)
+
+Breeze includes a built-in [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server (`breeze_mcp.py`) that connects AI coding assistants (**Claude Desktop**, **Cursor**, **Antigravity**, **Cline**) directly to your Nintendo Switch over PC Connect.
+
+With it, AI assistants can:
+- **Cross-Engine Reverse Engineering**: Works seamlessly across Unity (IL2CPP), Unreal Engine (UE4/UE5), Native C++, and GameMaker.
+- **Disassemble ARM64 Code**: Disassemble live memory via Capstone, automatically resolving `BL` targets to symbols and `ADRP` pages to static BSS/data pointers.
+- **Find Callers**: Discover all calling functions and branch sites across the executable using native `xref call`.
+- **Memory & Object Inspection**: Read/write/freeze typed memory and inspect live struct fields, class instances, vtables, and tagged value containers.
+- **Cheat Generation & Dual Deployment**: Assemble ARM64 code patches (`04000000`) or Type 5/7/6 pointer chains, and deploy simultaneously to live `dmnt`, Breeze SD, and Atmosphere contents (`sdmc:/atmosphere/contents/<TID>/cheats/`).
+
+**1-Command Setup:**
+```bash
+python3 install_mcp.py --host 192.168.1.65 --code 0303
+```
+
+Check status across all supported clients:
+```bash
+python3 install_mcp.py --status
+```
+
+For complete documentation and tool references, see [PC Connect Documentation](docs/pcconnect.md#breeze_mcppy-model-context-protocol-server-for-ai-assistants).
 
 ---
 
